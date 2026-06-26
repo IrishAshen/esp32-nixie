@@ -2,20 +2,17 @@
 
 #include <Arduino.h>
 #include <functional>
-#include <BLE2902.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
+#include <NimBLEDevice.h>
 
 // ─────────────────────────────────────────────────────────────────
-//  BLE GATT server
+//  BLE GATT server (via NimBLE-Arduino)
 //  - Advertises as "Nixie Clock"
 //  - Exposes one service with TX (notify) and RX (write) chars
 //  - Incoming writes are forwarded to the command callback
 // ─────────────────────────────────────────────────────────────────
 
-class BLEManager : public BLEServerCallbacks,
-                   public BLECharacteristicCallbacks {
+class BLEManager : public NimBLEServerCallbacks,
+                   public NimBLECharacteristicCallbacks {
 public:
     using CommandCallback = std::function<void(const String &json)>;
 
@@ -40,18 +37,18 @@ public:
     /// Restart advertising (e.g. after disconnect).
     void restartAdvertising();
 
-    // ── BLEServerCallbacks ─────────────────────────────────────
-    void onConnect(BLEServer *server) override;
-    void onDisconnect(BLEServer *server) override;
+    // ── NimBLEServerCallbacks ─────────────────────────────────
+    void onConnect(NimBLEServer *pServer) override;
+    void onDisconnect(NimBLEServer *pServer) override;
 
-    // ── BLECharacteristicCallbacks ─────────────────────────────
-    void onWrite(BLECharacteristic *pChar) override;
+    // ── NimBLECharacteristicCallbacks ─────────────────────────
+    void onWrite(NimBLECharacteristic *pCharacteristic) override;
 
 private:
-    CommandCallback   _cmdCb     = nullptr;
-    BLEServer        *_server    = nullptr;
-    BLECharacteristic *_txChar  = nullptr;
-    BLECharacteristic *_rxChar  = nullptr;
-    bool               _advertising = false;
-    int                _connectedCount = 0;
+    CommandCallback      _cmdCb  = nullptr;
+    NimBLEServer        *_server = nullptr;
+    NimBLECharacteristic *_txChar = nullptr;
+    NimBLECharacteristic *_rxChar = nullptr;
+    bool                 _advertising = false;
+    int                  _connectedCount = 0;
 };

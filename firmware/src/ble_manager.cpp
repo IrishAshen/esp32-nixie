@@ -1,51 +1,46 @@
 #include "ble_manager.h"
 #include "config.h"
 
-// ── statics for the BLE stack ──────────────────────────────────
-// UUIDs are defined in config.h; the service is instantiated here.
-static BLEUUID serviceUUID(BLE_SERVICE_UUID);
-static BLEUUID txCharUUID(BLE_CHAR_TX_UUID);
-static BLEUUID rxCharUUID(BLE_CHAR_RX_UUID);
-
 // ── begin ───────────────────────────────────────────────────────
 
 void BLEManager::begin() {
     // Initialise BLE device
-    BLEDevice::init(BLE_DEVICE_NAME);
-    // Optional: set device power to max for better range
-    BLEDevice::setPower(ESP_PWR_LVL_P9);
+    NimBLEDevice::init(BLE_DEVICE_NAME);
+    // Set power level for better range (+9 dBm)
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
     // Create server
-    _server = BLEDevice::createServer();
+    _server = NimBLEDevice::createServer();
     _server->setCallbacks(this);
 
-    // Create service
-    BLEService *service = _server->createService(serviceUUID);
+    // Create service (UUID is provided directly as a string)
+    NimBLEService *service = _server->createService(BLE_SERVICE_UUID);
 
     // ── TX characteristic (device → phone, with Notify) ─────
+    // NimBLE automatically adds the CCCD (BLE2902) descriptor
+    // when NIMBLE_PROPERTY::NOTIFY is set.
     _txChar = service->createCharacteristic(
-        txCharUUID,
-        BLECharacteristic::PROPERTY_NOTIFY
+        BLE_CHAR_TX_UUID,
+        NIMBLE_PROPERTY::NOTIFY
     );
-    _txChar->addDescriptor(new BLE2902()); // required for notifications
 
     // ── RX characteristic (phone → device, with Write) ─────
     _rxChar = service->createCharacteristic(
-        rxCharUUID,
-        BLECharacteristic::PROPERTY_WRITE
+        BLE_CHAR_RX_UUID,
+        NIMBLE_PROPERTY::WRITE
     );
     _rxChar->setCallbacks(this);
 
     // ── Start service & advertising ─────────────────────────
     service->start();
 
-    BLEAdvertising *adv = BLEDevice::getAdvertising();
-    adv->addServiceUUID(serviceUUID);
+    NimBLEAdvertising *adv = NimBLEDevice::getAdvertising();
+    adv->addServiceUUID(BLE_SERVICE_UUID);
     adv->setScanResponse(true);
     // Apple-friendly advertising interval
     adv->setMinPreferred(0x06);
     adv->setMinPreferred(0x12);
-    BLEDevice::startAdvertising();
+    adv->start();
     _advertising = true;
 
     Serial.printf("[ble] advertising as \"%s\"\n", BLE_DEVICE_NAME);
@@ -54,12 +49,8 @@ void BLEManager::begin() {
 // ── update (call from loop) ─────────────────────────────────────
 
 void BLEManager::update() {
-    // BLE stack runs autonomously; nothing extra needed here.
-    // Future: handle pending commands (currently processed in onWrite
-    // callback, which is fine for low-frequency control commands).
-    //
-    // If commands ever come faster than they are processed, add a
-    // queue + flag here to defer processing to the main loop.
+    // NimBLE stack runs autonomously; housekeeping is handled
+    // by its own threads.  Nothing extra needed here.
 }
 
 // ── send notification ──────────────────────────────────────────
@@ -69,46 +60,44 @@ void BLEManager::send(const String &json) {
 
     _txChar->setValue(json.c_str());
     _txChar->notify();
-    // notify() is asynchronous; ESP32 BLE stack handles queuing.
 }
 
 void BLEManager::restartAdvertising() {
     if (!_advertising) {
-        BLEDevice::startAdvertising();
+        NimBLEDevice::getAdvertising()->start();
         _advertising = true;
     }
 }
 
-// ── BLEServerCallbacks ─────────────────────────────────────────
+// ── NimBLEServerCallbacks ──────────────────────────────────────
 
-void BLEManager::onConnect(BLEServer *server) {
+void BLEManager::onConnect(NimBLEServer *pServer) {
     _connectedCount++;
     _advertising = false;
     Serial.printf("[ble] client connected (total: %d)\n", _connectedCount);
 }
 
-void BLEManager::onDisconnect(BLEServer *server) {
+void BLEManager::onDisconnect(NimBLEServer *pServer) {
     if (_connectedCount > 0) _connectedCount--;
     Serial.printf("[ble] client disconnected (remaining: %d)\n",
                   _connectedCount);
 
     // Restart advertising so new clients can find us.
-    server->startAdvertising();
+    NimBLEDevice::getAdvertising()->start();
     _advertising = true;
 }
 
-// ── BLECharacteristicCallbacks ─────────────────────────────────
+// ── NimBLECharacteristicCallbacks ──────────────────────────────
 
-void BLEManager::onWrite(BLECharacteristic *pChar) {
+void BLEManager::onWrite(NimBLECharacteristic *pCharacteristic) {
     if (!_cmdCb) return;
 
-    std::string raw = pChar->getValue();
+    std::string raw = pCharacteristic->getValue();
     if (raw.empty()) return;
 
     String cmd = String(raw.c_str());
-
-    // Trim whitespace and check length
     cmd.trim();
+
     if (cmd.isEmpty() || cmd.length() > CMD_DOC_SIZE) {
         Serial.println(F("[ble] ignoring empty or oversized command"));
         return;

@@ -48,7 +48,7 @@ ESP32 GPIO
 | Работа с I²C / RTC | `RTClib` от Adafruit (v2.1+) | Проверенная, стабильная работа с DS3231 |
 | WiFi | `WiFi.h` (штатная в ESP32 Arduino Core) | Стандарт, без зависимостей |
 | NTP | `configTime()` + `::time()` из `time.h` | Встроенная SNTP-поддержка ESP32 SDK |
-| BLE | `BLEDevice` + `BLEServer` (nimBLE стек ESP32) | BLE (не Classic), GATT-сервер |
+| BLE | `NimBLE-Arduino` от h2zero (v1.4+) | Apache NimBLE вместо Bluedroid; ~200 KB вместо ~1.1 MB |
 | JSON | `ArduinoJson` от Benoit Blanchon (v7+) | Лёгкая, эффективная, стандарт де-факто |
 | Сдвиговые регистры | Собственный класс `ShiftRegister` | Минималистичная bit-bang реализация |
 
@@ -229,9 +229,15 @@ g_cmdHandler.addCommand("set_timezone", [](const JsonObject &cmd,
 platform = espressif32
 board = esp32dev
 framework = arduino
+board_build.lto = true
 lib_deps =
     adafruit/RTClib @ ^2.1
     bblanchon/ArduinoJson @ ^7.0
+    h2zero/NimBLE-Arduino @ ^1.4
+lib_ignore = ESP32 BLE Arduino   ; заменяем Bluedroid (~1.1 MB) на nimBLE (~200 KB)
 ```
 
 BLEDevice, WiFi, Preferences входят в состав ESP32 Arduino Core.
+
+Используется стандартная OTA-совместимая таблица разделов
+(два слота по 1256 KB для обновлений по воздуху).
