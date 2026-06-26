@@ -19,13 +19,13 @@ public:
 
     /// Get current UTC time as Unix epoch (seconds since 1970-01-01).
     /// Returns 0 if RTC is not available or lost power.
-    time_t getTime() const;
+    time_t getTime();
 
     /// Set RTC time from a Unix timestamp.
     void setTime(time_t t);
 
     /// True if the RTC battery has failed and the time was reset.
-    bool lostPower() const;
+    bool lostPower();
 
 private:
     RTC_DS3231 _rtc;

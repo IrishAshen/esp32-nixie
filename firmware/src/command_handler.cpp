@@ -13,7 +13,7 @@ void CommandHandler::addCommand(
 
 String CommandHandler::process(const String &json) {
     // Parse incoming JSON
-    StaticJsonDocument<CMD_DOC_SIZE> doc;
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, json);
 
     if (err) {
@@ -24,7 +24,7 @@ String CommandHandler::process(const String &json) {
     JsonObject root = doc.as<JsonObject>();
 
     // Every command must have a "cmd" field
-    if (!root.containsKey("cmd")) {
+    if (!root["cmd"].is<const char *>()) {
         return _makeError("Missing 'cmd' field");
     }
 
@@ -38,7 +38,7 @@ String CommandHandler::process(const String &json) {
     }
 
     // Build response document
-    StaticJsonDocument<RESP_DOC_SIZE> respDoc;
+    JsonDocument respDoc;
     JsonObject resp = respDoc.to<JsonObject>();
     resp["event"]  = "response";
     resp["cmd"]    = cmdName;
@@ -67,7 +67,7 @@ String CommandHandler::listCommands() const {
 }
 
 String CommandHandler::_makeError(const String &message) {
-    StaticJsonDocument<RESP_DOC_SIZE> doc;
+    JsonDocument doc;
     doc["event"]   = "response";
     doc["status"]  = "error";
     doc["message"] = message;

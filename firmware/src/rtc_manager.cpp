@@ -22,7 +22,7 @@ bool RTCManager::begin() {
     return true;
 }
 
-time_t RTCManager::getTime() const {
+time_t RTCManager::getTime() {
     if (!_available) return 0;
     return _rtc.now().unixtime();
 }
@@ -33,7 +33,7 @@ void RTCManager::setTime(time_t t) {
     Serial.printf("[rtc] time set to %lu\n", static_cast<unsigned long>(t));
 }
 
-bool RTCManager::lostPower() const {
+bool RTCManager::lostPower() {
     if (!_available) return false;
     return _rtc.lostPower();
 }

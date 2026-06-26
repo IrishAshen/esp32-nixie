@@ -2,6 +2,7 @@
 #include <Preferences.h>
 #include <time.h>
 #include <sys/time.h>  // for settimeofday
+#include <WiFi.h>       // WiFi.localIP() etc.
 
 #include "config.h"
 #include "shift_register.h"
@@ -111,7 +112,7 @@ static void registerCommands() {
     // ── set_wifi ───────────────────────────────────────────────
     g_cmdHandler.addCommand("set_wifi", [](const JsonObject &cmd,
                                             JsonObject &resp) {
-        if (!cmd.containsKey("ssid") || !cmd.containsKey("password")) {
+        if (!cmd["ssid"].is<const char *>() || !cmd["password"].is<const char *>()) {
             resp["status"]  = "error";
             resp["message"] = "Missing 'ssid' or 'password'";
             return;
@@ -125,7 +126,7 @@ static void registerCommands() {
     // ── set_time (manual override) ──────────────────────────────
     g_cmdHandler.addCommand("set_time", [](const JsonObject &cmd,
                                             JsonObject &resp) {
-        if (!cmd.containsKey("timestamp")) {
+        if (!cmd["timestamp"].is<time_t>()) {
             resp["status"]  = "error";
             resp["message"] = "Missing 'timestamp' (Unix epoch seconds)";
             return;
@@ -147,7 +148,7 @@ static void registerCommands() {
     // ── set_timezone ───────────────────────────────────────────
     g_cmdHandler.addCommand("set_timezone", [](const JsonObject &cmd,
                                                 JsonObject &resp) {
-        if (!cmd.containsKey("offset")) {
+        if (!cmd["offset"].is<int>()) {
             resp["status"]  = "error";
             resp["message"] = "Missing 'offset' (hours from UTC, e.g. 3)";
             return;
@@ -166,7 +167,7 @@ static void registerCommands() {
     // ── set_format ─────────────────────────────────────────────
     g_cmdHandler.addCommand("set_format", [](const JsonObject &cmd,
                                               JsonObject &resp) {
-        if (!cmd.containsKey("value")) {
+        if (!cmd["value"].is<const char *>()) {
             resp["status"]  = "error";
             resp["message"] = "Missing 'value' (\"12h\" or \"24h\")";
             return;
@@ -189,7 +190,7 @@ static void registerCommands() {
     // ── get_status ─────────────────────────────────────────────
     g_cmdHandler.addCommand("get_status", [](const JsonObject &cmd,
                                               JsonObject &resp) {
-        JsonObject st = resp.createNestedObject("state");
+        JsonObject st = resp["state"].to<JsonObject>();
         st["wifi"]       = g_wifi.isConnected() ? "connected" : "disconnected";
         st["ssid"]       = g_wifi.getSSID();
         st["ntp"]        = g_wifi.isTimeSynced() ? "synced" : "pending";

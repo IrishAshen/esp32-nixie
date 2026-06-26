@@ -130,8 +130,6 @@ void WiFiManager::_checkNTPSync() {
 //  main loop tick
 // ═══════════════════════════════════════════════════════════════
 
-static constexpr unsigned long WIFI_TIMEOUT_MS = 15000UL;
-
 void WiFiManager::update() {
     // ── WiFi connection state machine ──────────────────────────
 

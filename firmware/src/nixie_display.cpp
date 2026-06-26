@@ -45,7 +45,7 @@ void NixieDisplay::show(uint8_t hours, uint8_t minutes,
     regs[1] = packNibbles(mm_lo, mm_hi);   // lamp 3 / lamp 2
 
 #if LAMP_COUNT == LAMPS_6
-    if constexpr (SHIFT_REG_COUNT >= 3) {
+    if (SHIFT_REG_COUNT >= 3) {
         regs[2] = packNibbles(ss_lo, ss_hi); // lamp 5 / lamp 4
     }
 #endif
