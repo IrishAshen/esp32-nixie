@@ -158,8 +158,22 @@ nixie_clock/
 | `set_format` | `value` ("12h" \| "24h") | Формат отображения на лампах |
 | `get_status` | — | Полный статус: WiFi, NTP, RTC, TZ, время |
 | `get_version` | — | Версия прошивки, количество ламп |
+| `ota` | `url` (string) | OTA-обновление: скачать прошивку по URL и перезагрузиться |
 | `list_commands` | — | Список всех зарегистрированных команд |
 | `reboot` | — | Перезагрузка ESP32 |
+
+### OTA-события
+
+Во время OTA-обновления ESP32 отправляет асинхронные события:
+
+```json
+{"event":"ota","status":"started"}
+{"event":"ota","status":"progress","percent":35}
+{"event":"ota","status":"success"}
+{"event":"ota","status":"failed","message":"HTTP 404"}
+```
+
+После `success` устройство автоматически перезагружается в новую прошивку.
 
 ---
 

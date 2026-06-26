@@ -11,6 +11,7 @@
 #include "wifi_manager.h"
 #include "ble_manager.h"
 #include "command_handler.h"
+#include "ota_manager.h"
 
 // ═══════════════════════════════════════════════════════════════
 //  Global state (shared across modules via extern in header
@@ -23,6 +24,7 @@ static RTCManager      g_rtc;
 static WiFiManager     g_wifi;
 static BLEManager      g_ble;
 static CommandHandler  g_cmdHandler;
+static OtaManager      g_ota;
 
 // ── persistent settings (stored in NVS) ─────────────────────────
 static Preferences g_prefs;
@@ -220,6 +222,28 @@ static void registerCommands() {
         resp["lamps"]   = static_cast<int>(LAMP_COUNT);
     });
 
+    // ── ota ──────────────────────────────────────────────────────
+    g_cmdHandler.addCommand("ota", [](const JsonObject &cmd,
+                                       JsonObject &resp) {
+        if (!g_wifi.isConnected()) {
+            resp["status"]  = "error";
+            resp["message"] = "WiFi not connected";
+            return;
+        }
+        if (!cmd["url"].is<const char *>()) {
+            resp["status"]  = "error";
+            resp["message"] = "Missing 'url' parameter";
+            return;
+        }
+        const char *url = cmd["url"];
+        if (!g_ota.startOTA(url)) {
+            resp["status"]  = "error";
+            resp["message"] = "OTA already in progress";
+            return;
+        }
+        resp["message"] = "OTA started";
+    });
+
     // ── list_commands ──────────────────────────────────────────
     g_cmdHandler.addCommand("list_commands", [](const JsonObject &cmd,
                                                  JsonObject &resp) {
@@ -316,6 +340,9 @@ void setup() {
     g_ble.onCommand(onBLECommand);
     g_ble.begin();
 
+    // ── OTA ────────────────────────────────────────────────────
+    g_ota.onEvent(sendBLEEvent);
+
     // Auto-connect if credentials exist
     if (g_wifi.hasCredentials()) {
         g_wifi.connect();
@@ -330,6 +357,9 @@ void loop() {
 
     // ── WiFi / NTP ─────────────────────────────────────────────
     g_wifi.update();
+
+    // ── OTA (non-blocking, does nothing if idle) ──────────────
+    g_ota.update();
 
     // ── Display update ─────────────────────────────────────────
     unsigned long now = millis();
