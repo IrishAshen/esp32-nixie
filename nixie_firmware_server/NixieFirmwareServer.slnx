@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/NixieFirmwareServer/NixieFirmwareServer.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/NixieFirmwareServer.Tests/NixieFirmwareServer.Tests.csproj" />
+  </Folder>
+</Solution>

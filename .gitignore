@@ -1,0 +1,38 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolib/
+.package/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# .NET
+**/bin/
+**/obj/
+**/*.user
+
+# Android
+**/local.properties
+**/*.iml
+**/.gradle/
+**/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Server data (gitkeep files preserve dirs)
+firmware/data/*.json
+firmware/firmware/*.bin
+
+# Temp
+tmp/

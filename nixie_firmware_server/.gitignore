@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.DS_Store
+data/*.json
+!data/.gitkeep
+firmware/*.bin
+!firmware/.gitkeep
