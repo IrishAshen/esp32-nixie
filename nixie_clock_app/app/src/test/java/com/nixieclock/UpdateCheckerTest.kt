@@ -52,7 +52,7 @@ class UpdateCheckerTest {
     @Test
     fun `parseManifest returns null for empty JSON`() {
         val manifest = checker.parseManifest("{}")
-        assertNotNull(manifest)
+        assertEquals(null, manifest)
     }
 
     @Test

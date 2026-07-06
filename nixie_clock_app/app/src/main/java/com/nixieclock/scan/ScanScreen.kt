@@ -253,6 +253,7 @@ private fun DeviceCard(
 
 // ── Helpers ─────────────────────────────────────────────────────
 
+@Composable
 private fun rssiColor(rssi: Int) = when {
     rssi >= -50 -> MaterialTheme.colorScheme.primary
     rssi >= -70 -> MaterialTheme.colorScheme.tertiary
