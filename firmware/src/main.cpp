@@ -12,6 +12,7 @@
 #include "ble_manager.h"
 #include "command_handler.h"
 #include "ota_manager.h"
+#include "pwm_manager.h"
 
 // ═══════════════════════════════════════════════════════════════
 //  Global state (shared across modules via extern in header
@@ -25,6 +26,7 @@ static WiFiManager     g_wifi;
 static BLEManager      g_ble;
 static CommandHandler  g_cmdHandler;
 static OtaManager      g_ota;
+static PwmManager      g_pwm;
 
 // ── persistent settings (stored in NVS) ─────────────────────────
 static Preferences g_prefs;
@@ -200,6 +202,7 @@ static void registerCommands() {
         st["timezone"]   = g_tzOffset;
         st["format"]     = g_format12h ? "12h" : "24h";
         st["lamps"]      = static_cast<int>(LAMP_COUNT);
+        st["brightness"] = static_cast<int>(g_pwm.getBrightness());
 
         // Local time string for verification
         time_t now = ::time(nullptr);
@@ -220,6 +223,24 @@ static void registerCommands() {
         resp["version"] = "1.0.0";
         resp["build"]   = __DATE__ " " __TIME__;
         resp["lamps"]   = static_cast<int>(LAMP_COUNT);
+    });
+
+    // ── set_brightness ──────────────────────────────────────────
+    g_cmdHandler.addCommand("set_brightness", [](const JsonObject &cmd,
+                                                   JsonObject &resp) {
+        if (!cmd["value"].is<int>()) {
+            resp["status"]  = "error";
+            resp["message"] = "Missing 'value' (0–100)";
+            return;
+        }
+        int val = cmd["value"].as<int>();
+        if (val < 0 || val > 100) {
+            resp["status"]  = "error";
+            resp["message"] = "Value out of range — must be 0–100";
+            return;
+        }
+        g_pwm.setBrightness(static_cast<uint8_t>(val));
+        resp["message"] = "Brightness set";
     });
 
     // ── ota ──────────────────────────────────────────────────────
@@ -321,6 +342,9 @@ void setup() {
                      PIN_SH_LATCH, SHIFT_REG_COUNT);
     g_display.blank();
     Serial.println(F("[hw] shift registers initialised"));
+
+    // ── PWM brightness ───────────────────────────────────────────
+    g_pwm.begin();
 
     // ── RTC ────────────────────────────────────────────────────
     g_rtc.begin();

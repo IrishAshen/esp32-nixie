@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
  */
 class ClockViewModel(
     private val bleManager: BLEManager,
-    private val settingsStore: SettingsStore,
+    val settingsStore: SettingsStore,
     private val updateChecker: UpdateChecker,
 ) : ViewModel() {
 
@@ -223,6 +223,12 @@ class ClockViewModel(
         sendCommand("set_format", mapOf("value" to if (is12h) "12h" else "24h"))
     }
 
+    fun setBrightness(value: Int) {
+        val clamped = value.coerceIn(0, 100)
+        settingsStore.lastBrightness = clamped
+        sendCommand("set_brightness", mapOf("value" to clamped))
+    }
+
     fun getStatus() {
         sendCommand("get_status")
     }
@@ -359,6 +365,7 @@ class ClockViewModel(
             timezone = state.get("timezone")?.asInt ?: 0,
             format = state.get("format")?.asString ?: "24h",
             lamps = state.get("lamps")?.asInt ?: 0,
+            brightness = state.get("brightness")?.asInt ?: 100,
             localTime = state.get("local_time")?.asString,
         )
         _clockStatus.value = status

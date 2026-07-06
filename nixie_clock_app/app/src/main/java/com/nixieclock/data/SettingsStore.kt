@@ -30,6 +30,11 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(Config.KEY_LAST_FORMAT_12H, false)
         set(value) = prefs.edit().putBoolean(Config.KEY_LAST_FORMAT_12H, value).apply()
 
+    // ── Яркость ламп ─────────────────────────────────────────────
+    var lastBrightness: Int
+        get() = prefs.getInt(Config.KEY_LAST_BRIGHTNESS, 100)
+        set(value) = prefs.edit().putInt(Config.KEY_LAST_BRIGHTNESS, value).apply()
+
     /** Очистить все сохранённые настройки */
     fun clear() {
         prefs.edit().clear().apply()

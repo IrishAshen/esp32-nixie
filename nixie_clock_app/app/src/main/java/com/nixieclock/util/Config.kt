@@ -31,4 +31,5 @@ object Config {
     const val KEY_LAST_OTA_URL = "last_ota_url"
     const val KEY_LAST_TIMEZONE = "last_timezone"
     const val KEY_LAST_FORMAT_12H = "last_format_12h"
+    const val KEY_LAST_BRIGHTNESS = "last_brightness"
 }

@@ -43,6 +43,7 @@ class ClockViewModelTest {
 
         // Базовая настройка возвращаемых значений
         every { settingsStore.lastTimezone } returns 3
+        every { settingsStore.lastBrightness } returns 100
         every { settingsStore.lastFormat12h } returns false
         every { bleManager.scan() } returns emptyFlow()
         every { bleManager.isConnected() } returns false
@@ -219,6 +220,19 @@ class ClockViewModelTest {
         verify(exactly = 1) { settingsStore.lastFormat12h = true }
         verify(exactly = 1) { bleManager.send("{\"cmd\":\"set_format\",\"value\":\"12h\"}") }
     }
+
+    @Test
+    fun `setBrightness saves to settings and sends command`() = runTest {
+        val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
+        every { bleManager.connect(device.address) } returns Result.success(Unit)
+        viewModel.connectTo(device)
+
+        viewModel.setBrightness(42)
+
+        verify(exactly = 1) { settingsStore.lastBrightness = 42 }
+        verify(exactly = 1) { bleManager.send("{\"cmd\":\"set_brightness\",\"value\":42}") }
+    }
+
 
     // ═══════════════════════════════════════════════════════════════
     //  Firmware update check
