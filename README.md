@@ -43,6 +43,21 @@ dotnet test
 dotnet run --project src/NixieFirmwareServer
 ```
 
+### Docker
+
+```bash
+cd nixie_firmware_server
+docker build -t nixie-firmware-server .
+docker run -d \
+  -p 8080:8080 \
+  -e ApiKey=my-secret-key \
+  -e FirmwareStore__FilesDirectory=/app/firmware \
+  -e FirmwareStore__DataDirectory=/app/data \
+  -v nixie-firmware-data:/app/data \
+  -v nixie-firmware-files:/app/firmware \
+  nixie-firmware-server
+```
+
 ## Архитектура
 
 Подробное описание архитектурных решений в `ARCHITECTURE.md` каждого проекта.

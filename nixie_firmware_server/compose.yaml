@@ -1,0 +1,27 @@
+services:
+  firmware-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nixie-firmware-server
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ApiKey=${NIXIE_API_KEY:-change-me-in-production}
+      - FirmwareStore__FilesDirectory=/app/firmware
+      - FirmwareStore__DataDirectory=/app/data
+    volumes:
+      - nixie-firmware-data:/app/data
+      - nixie-firmware-files:/app/firmware
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  nixie-firmware-data:
+  nixie-firmware-files:
