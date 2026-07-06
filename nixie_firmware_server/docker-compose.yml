@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Nixie Firmware Server — docker-compose
+# ─────────────────────────────────────────────────────────────────────
+# Запуск:
+#   docker compose up -d
+#
+# С переопределением API-ключа:
+#   API_KEY=my-secret-key docker compose up -d
+# ─────────────────────────────────────────────────────────────────────
+
+services:
+  firmware-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nixie-firmware-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # ── Конфигурация через переменные окружения ──────────────────
+      # (переопределяют appsettings.json по правилам .NET Configuration)
+      - ApiKey=${API_KEY:-changeme-in-production}
+      - FirmureStore__FilesDirectory=/app/firmware
+      - FirmureStore__DataDirectory=/app/data
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      # Данные хранятся вне контейнера — не теряются при recreate
+      - firmware-data:/app/firmware
+      - firmware-meta:/app/data
+
+volumes:
+  firmware-data:
+  firmware-meta:
