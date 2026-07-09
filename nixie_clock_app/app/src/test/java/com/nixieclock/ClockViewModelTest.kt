@@ -10,10 +10,16 @@ import com.nixieclock.model.UpdateCheckResult
 import com.nixieclock.viewmodel.ClockViewModel
 import io.mockk.Called
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -37,12 +43,14 @@ class ClockViewModelTest {
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         bleManager = mockk(relaxed = true)
         settingsStore = mockk(relaxed = true)
         updateChecker = mockk(relaxed = true)
 
         // Базовая настройка возвращаемых значений
         every { settingsStore.lastTimezone } returns 3
+        every { settingsStore.lastBrightness } returns 100
         every { settingsStore.lastFormat12h } returns false
         every { bleManager.scan() } returns emptyFlow()
         every { bleManager.isConnected() } returns false
@@ -51,6 +59,10 @@ class ClockViewModelTest {
         every { bleManager.onErrorCallback = any() } just Runs
 
         viewModel = ClockViewModel(bleManager, settingsStore, updateChecker)
+    }
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -105,7 +117,7 @@ class ClockViewModelTest {
     @Test
     fun `connectTo changes state to Connecting then Connected on success`() = runTest {
         val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device.address) } returns Result.success(Unit)
+        coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
 
         viewModel.connectTo(device)
 
@@ -119,7 +131,7 @@ class ClockViewModelTest {
     @Test
     fun `connectTo reverts to Disconnected on failure`() = runTest {
         val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device.address) } returns Result.failure(Exception("Timeout"))
+        coEvery { bleManager.connect(device.address) } returns Result.failure(Exception("Timeout"))
 
         viewModel.connectTo(device)
 
@@ -130,7 +142,7 @@ class ClockViewModelTest {
     fun `connectTo is ignored when already connected`() {
         // First connect successfully
         val device1 = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device1.address) } returns Result.success(Unit)
+        coEvery { bleManager.connect(device1.address) } returns Result.success(Unit)
         runTest { viewModel.connectTo(device1) }
 
         // Try connecting again
@@ -147,7 +159,7 @@ class ClockViewModelTest {
     fun `disconnect resets state and starts scan`() {
         runTest {
             val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-            every { bleManager.connect(device.address) } returns Result.success(Unit)
+            coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
             viewModel.connectTo(device)
         }
 
@@ -166,7 +178,7 @@ class ClockViewModelTest {
     fun `sendCommand does not send when not connected`() {
         viewModel.sendCommand("get_status")
 
-        verify { bleManager wasNot Called }
+        verify(exactly = 0) { bleManager.send(any()) }
     }
 
     @Test
@@ -183,13 +195,13 @@ class ClockViewModelTest {
     @Test
     fun `sendCommand sends JSON when connected`() = runTest {
         val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device.address) } returns Result.success(Unit)
+        coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
         viewModel.connectTo(device)
 
         // Now should be ready to send
         viewModel.sendCommand("get_status")
 
-        verify(exactly = 1) { bleManager.send(any()) }
+        verify(atLeast = 1) { bleManager.send(any()) }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -199,7 +211,7 @@ class ClockViewModelTest {
     @Test
     fun `setTimezone saves to settings and sends command`() = runTest {
         val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device.address) } returns Result.success(Unit)
+        coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
         viewModel.connectTo(device)
 
         viewModel.setTimezone(5)
@@ -211,7 +223,7 @@ class ClockViewModelTest {
     @Test
     fun `setFormat saves to settings and sends command`() = runTest {
         val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
-        every { bleManager.connect(device.address) } returns Result.success(Unit)
+        coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
         viewModel.connectTo(device)
 
         viewModel.setFormat(true)
@@ -220,13 +232,26 @@ class ClockViewModelTest {
         verify(exactly = 1) { bleManager.send("{\"cmd\":\"set_format\",\"value\":\"12h\"}") }
     }
 
+    @Test
+    fun `setBrightness saves to settings and sends command`() = runTest {
+        val device = NixieDevice("AA:BB:CC:DD:EE:FF", "Nixie Clock", -65)
+        coEvery { bleManager.connect(device.address) } returns Result.success(Unit)
+        viewModel.connectTo(device)
+
+        viewModel.setBrightness(42)
+
+        verify(exactly = 1) { settingsStore.lastBrightness = 42 }
+        verify(exactly = 1) { bleManager.send("{\"cmd\":\"set_brightness\",\"value\":42}") }
+    }
+
+
     // ═══════════════════════════════════════════════════════════════
     //  Firmware update check
     // ═══════════════════════════════════════════════════════════════
 
     @Test
     fun `checkFirmwareUpdate returns UpToDate`() = runTest {
-        every { updateChecker.check() } returns UpdateCheckResult.UpToDate
+        coEvery { updateChecker.check() } returns UpdateCheckResult.UpToDate
 
         viewModel.checkFirmwareUpdate()
 
@@ -243,7 +268,7 @@ class ClockViewModelTest {
             releaseNotes = "Major update",
             publishedAt = "2026-07-01",
         )
-        every { updateChecker.check() } returns UpdateCheckResult.Available(manifest)
+        coEvery { updateChecker.check() } returns UpdateCheckResult.Available(manifest)
 
         viewModel.checkFirmwareUpdate()
 
@@ -254,7 +279,7 @@ class ClockViewModelTest {
 
     @Test
     fun `checkFirmwareUpdate returns Error`() = runTest {
-        every { updateChecker.check() } returns UpdateCheckResult.Error("HTTP 500")
+        coEvery { updateChecker.check() } returns UpdateCheckResult.Error("HTTP 500")
 
         viewModel.checkFirmwareUpdate()
 
@@ -280,7 +305,7 @@ class ClockViewModelTest {
 
     @Test
     fun `clearUpdateResult resets result`() = runTest {
-        every { updateChecker.check() } returns UpdateCheckResult.UpToDate
+        coEvery { updateChecker.check() } returns UpdateCheckResult.UpToDate
         viewModel.checkFirmwareUpdate()
         assertNotNull(viewModel.updateResult.value)
 

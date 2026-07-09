@@ -81,6 +81,7 @@ class ModelsTest {
             timezone = 3,
             format = "24h",
             lamps = 6,
+            brightness = 75,
             localTime = "15:30:00",
         )
 
@@ -88,6 +89,17 @@ class ModelsTest {
         assertEquals("MyWiFi", status.ssid)
         assertEquals("synced", status.ntp)
         assertEquals(3, status.timezone)
+        assertEquals(75, status.brightness)
+    }
+
+    @Test
+    fun `ClockStatus brightness defaults to 0`() {
+        val status = ClockStatus(
+            wifi = "connected", ssid = null, ntp = "synced",
+            rtc = "ok", timezone = 0, format = "24h",
+            lamps = 4, localTime = null,
+        )
+        assertEquals(0, status.brightness)
     }
 
     @Test

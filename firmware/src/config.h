@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 // ═══════════════════════════════════════════════════════════════════
 //  Nixie Clock – compile-time configuration
 //  Change LAMP_COUNT between LAMPS_4 (HH:MM) and LAMPS_6 (HH:MM:SS)
@@ -22,6 +25,13 @@ constexpr uint8_t SHIFT_REG_COUNT = LAMP_COUNT / 2;
 constexpr uint8_t PIN_SH_DATA  = 13;  // DS   – Serial data
 constexpr uint8_t PIN_SH_CLOCK = 14;  // SH_CP – Shift register clock
 constexpr uint8_t PIN_SH_LATCH = 15;  // ST_CP – Storage (latch) clock
+
+// ── PWM (brightness control) ────────────────────────────────────
+constexpr uint8_t PIN_PWM_BRIGHTNESS  = 4;   // → high-voltage module EN pin
+constexpr uint32_t PWM_FREQ_HZ        = 2000;
+constexpr uint8_t  PWM_RESOLUTION_BITS = 13;  // 13-bit → duty 0…8191
+constexpr uint8_t  PWM_CHANNEL         = 0;   // LEDC channel 0
+constexpr uint8_t  DEFAULT_BRIGHTNESS  = 100; // 0–100 %
 
 // ── DS3231 RTC  (uses default I2C pins) ─────────────────────────
 // SDA = GPIO21, SCL = GPIO22  (standard ESP32 Arduino I2C)

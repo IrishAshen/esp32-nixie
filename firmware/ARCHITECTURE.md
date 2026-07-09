@@ -21,6 +21,7 @@
 ```
 ESP32 GPIO
 ├── 13 (DATA)   → 74HC595 #1 DS
+├── 4  (PWM)     → High-voltage module EN (brightness control)
 ├── 14 (CLOCK)  → 74HC595 #1 SH_CP  (общий для всех)
 ├── 15 (LATCH)  → 74HC595 #1 ST_CP  (общий для всех)
 ├── 21 (SDA)    → DS3231 SDA
@@ -51,6 +52,7 @@ ESP32 GPIO
 | BLE | `NimBLE-Arduino` от h2zero (v1.4+) | Apache NimBLE вместо Bluedroid; ~200 KB вместо ~1.1 MB |
 | JSON | `ArduinoJson` от Benoit Blanchon (v7+) | Лёгкая, эффективная, стандарт де-факто |
 | Сдвиговые регистры | Собственный класс `ShiftRegister` | Минималистичная bit-bang реализация |
+| PWM (яркость) | `PwmManager` (LEDC ESP32 Core) | ШИМ 2 кГц, 13 бит, GPIO 4 — управление яркостью ламп (0–100 %) |
 
 ---
 
@@ -69,6 +71,7 @@ nixie_clock/
 │   ├── wifi_manager.*      # WiFi + SNTP (24h sync, 3 retries)
 │   ├── ble_manager.*       # BLE GATT-сервер (TX notify / RX write)
 │   ├── command_handler.*   # JSON-диспетчер команд (registry pattern)
+│   ├── pwm_manager.*       # LEDC PWM — управление яркостью ламп (GPIO 4)
 │   └── main.cpp            # Точка входа, loop(), регистрация команд
 ```
 
@@ -156,11 +159,12 @@ nixie_clock/
 | `set_time` | `timestamp` (int, Unix epoch) | Установить время вручную (RTC + system) |
 | `set_timezone` | `offset` (int, -12..+14) | Часовой пояс относительно UTC |
 | `set_format` | `value` ("12h" \| "24h") | Формат отображения на лампах |
-| `get_status` | — | Полный статус: WiFi, NTP, RTC, TZ, время |
+| `get_status` | — | Полный статус: WiFi, NTP, RTC, TZ, время, яркость |
 | `get_version` | — | Версия прошивки, количество ламп |
 | `ota` | `url` (string) | OTA-обновление: скачать прошивку по URL и перезагрузиться |
 | `list_commands` | — | Список всех зарегистрированных команд |
 | `reboot` | — | Перезагрузка ESP32 |
+| `set_brightness` | `value` (int, 0–100) | Яркость ламп (ШИМ 2 кГц, GPIO 4) |
 
 ### OTA-события
 

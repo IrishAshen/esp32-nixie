@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BluetoothDisconnected
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Watch
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -115,6 +116,9 @@ fun HomeScreen(
 
         // ── Time settings section ────────────────────────────────
         item { TimeSection(viewModel) }
+
+        // ── Brightness section ───────────────────────────────────
+        item { BrightnessSection(viewModel) }
 
         // ── Status section ───────────────────────────────────────
         item { StatusSection(clockStatus, clockVersion) }
@@ -344,6 +348,48 @@ private fun TimeSection(viewModel: ClockViewModel) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  Brightness section
+// ═══════════════════════════════════════════════════════════════════
+
+@Composable
+private fun BrightnessSection(viewModel: ClockViewModel) {
+    SectionCard(title = "Brightness", icon = Icons.Default.WbSunny) {
+        var brightness by remember {
+            mutableFloatStateOf(viewModel.settingsStore.lastBrightness.toFloat())
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "0",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Slider(
+                value = brightness,
+                onValueChange = { brightness = it },
+                onValueChangeFinished = {
+                    viewModel.setBrightness(brightness.toInt())
+                },
+                valueRange = 0f..100f,
+                steps = 99,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+            )
+            Text(
+                text = "${brightness.toInt()}%",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.width(40.dp),
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  Status section
 // ═══════════════════════════════════════════════════════════════════
 
@@ -359,6 +405,7 @@ private fun StatusSection(
             StatusRow("RTC", status.rtc, "")
             StatusRow("Timezone", "UTC${if (status.timezone >= 0) "+" else ""}${status.timezone}", "")
             StatusRow("Format", status.format, "")
+            StatusRow("Brightness", "${status.brightness}%", "")
             StatusRow("Lamps", "${status.lamps}", "")
             if (status.localTime != null) {
                 StatusRow("Local Time", status.localTime, "", isHighlight = true)

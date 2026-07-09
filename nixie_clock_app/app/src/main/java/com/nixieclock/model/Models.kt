@@ -35,6 +35,7 @@ data class ClockStatus(
     val timezone: Int,
     val format: String,
     val lamps: Int,
+    val brightness: Int = 0,
     val localTime: String?,
 )
 

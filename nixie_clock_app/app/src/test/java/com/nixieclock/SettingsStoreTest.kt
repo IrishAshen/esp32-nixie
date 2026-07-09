@@ -67,14 +67,27 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `lastBrightness defaults to 100`() {
+        assertEquals(100, store.lastBrightness)
+    }
+
+    @Test
+    fun `lastBrightness stores value`() {
+        store.lastBrightness = 42
+        assertEquals(42, store.lastBrightness)
+    }
+
+    @Test
     fun `clear removes all stored values`() {
         store.lastOtaUrl = "https://example.com/fw.bin"
         store.lastTimezone = 8
         store.lastFormat12h = true
+        store.lastBrightness = 75
 
         store.clear()
 
         assertEquals("", store.lastOtaUrl)
+        assertEquals(100, store.lastBrightness)
         assertEquals(3, store.lastTimezone)
         assertFalse(store.lastFormat12h)
     }

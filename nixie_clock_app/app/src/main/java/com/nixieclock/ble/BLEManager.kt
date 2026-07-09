@@ -134,7 +134,7 @@ class BLEManager(private val context: Context) {
     fun stopScan() {
         if (isScanning.compareAndSet(true, false)) {
             try {
-                bluetoothAdapter?.bluetoothLeScanner?.stopScan(null)
+                bluetoothAdapter?.bluetoothLeScanner?.stopScan(null as android.bluetooth.le.ScanCallback?)
             } catch (_: Exception) { }
         }
     }

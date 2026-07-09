@@ -99,4 +99,9 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // ── Kotlin Compose Compiler plugin ──────────────────────────────
+    // AGP composeOptions should handle this, but with Gradle 8.7 it
+    // doesn't get added to kotlinCompilerPluginClasspath automatically.
+    add("kotlinCompilerPluginClasspath", "androidx.compose.compiler:compiler:1.5.14")
 }
