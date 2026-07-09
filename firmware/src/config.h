@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 // ═══════════════════════════════════════════════════════════════════
 //  Nixie Clock – compile-time configuration
 //  Change LAMP_COUNT between LAMPS_4 (HH:MM) and LAMPS_6 (HH:MM:SS)

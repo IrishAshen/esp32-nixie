@@ -36,3 +36,4 @@ firmware/firmware/*.bin
 
 # Temp
 tmp/
+local.properties
