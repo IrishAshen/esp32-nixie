@@ -9,37 +9,19 @@
 
 #include <Arduino.h>
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  Конфигурация — правь здесь
-// ═══════════════════════════════════════════════════════════════════════════
-
 // Период смены цифр (мс)
-static constexpr unsigned long CYCLES_MS = 1000;
+static constexpr unsigned long CYCLES_MS = 5000;
 
 // Пины 74HC595 (ESP32 DevKit 30 pin)
-static constexpr uint8_t PIN_DATA  = 13;   // DS
-static constexpr uint8_t PIN_CLOCK = 14;   // SH_CP
-static constexpr uint8_t PIN_LATCH = 15;   // ST_CP
+static constexpr uint8_t PIN_DATA  = 27;   // DS
+static constexpr uint8_t PIN_CLOCK = 26;   // SH_CP
+static constexpr uint8_t PIN_LATCH = 25;   // ST_CP
+
+static constexpr uint8_t digitMap[10] = { 3, 1, 9, 8, 0, 12, 4, 2, 10, 11 };
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  74HC595 bit-bang helpers
 // ═══════════════════════════════════════════════════════════════════════════
-
-/// Сдвинуть один байт в регистр (LSB first).
-/// После вызова всех байт нужно дёрнуть latchPin чтобы применить.
-static void shiftByte(uint8_t data) {
-    for (uint8_t i = 0; i < 8; ++i) {
-        digitalWrite(PIN_DATA, (data >> i) & 1U);
-        digitalWrite(PIN_CLOCK, HIGH);
-        digitalWrite(PIN_CLOCK, LOW);
-    }
-}
-
-/// Вывести данные на выходы 74HC595 (latch).
-static void latch() {
-    digitalWrite(PIN_LATCH, HIGH);
-    digitalWrite(PIN_LATCH, LOW);
-}
 
 /// Показать одну и ту же BCD-цифру (0–9) на обеих ИН-12.
 ///
@@ -47,9 +29,27 @@ static void latch() {
 /// ст. тетрада → К155ИД1 #2 (лампа 2). Обе тетрады одинаковые,
 /// так что обе лампы горят одной цифрой.
 static void showDigit(uint8_t d) {
-    uint8_t bcd = d & 0x0F;                // 4-bit BCD, на всякий случай маска
-    shiftByte((bcd << 4) | bcd);           // обе лампы — одно и то же число
-    latch();
+    uint8_t bcd = digitMap[d];
+    bcd = bcd & 0x0F;                       // 4-bit BCD, на всякий случай маска
+
+    digitalWrite(PIN_LATCH, LOW);
+    shiftOut(PIN_DATA, PIN_CLOCK, LSBFIRST, (bcd << 4) | bcd);
+
+    digitalWrite(PIN_LATCH, HIGH);
+}
+
+static void showDigits(uint8_t d[]) {
+    uint8_t hh = (digitMap[d[0]] << 4) | digitMap[d[1]];
+    uint8_t mm = (digitMap[d[2]] << 4) | digitMap[d[3]];
+    uint8_t ss = (digitMap[d[4]] << 4) | digitMap[d[5]];
+
+    digitalWrite(PIN_LATCH, LOW);
+
+    shiftOut(PIN_DATA, PIN_CLOCK, LSBFIRST, ss);
+    shiftOut(PIN_DATA, PIN_CLOCK, LSBFIRST, mm);
+    shiftOut(PIN_DATA, PIN_CLOCK, LSBFIRST, hh);
+
+    digitalWrite(PIN_LATCH, HIGH);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -57,6 +57,8 @@ static void showDigit(uint8_t d) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 void setup() {
+    Serial.begin(115200);
+
     pinMode(PIN_DATA,  OUTPUT);
     pinMode(PIN_CLOCK, OUTPUT);
     pinMode(PIN_LATCH, OUTPUT);
@@ -68,17 +70,24 @@ void setup() {
 }
 
 void loop() {
-    static uint8_t digit = 0;          // текущая цифра (0–9)
+    static uint8_t digits[6] = { 0, 1, 2, 3, 4, 5 };          // текущая цифра (0–9)
     static unsigned long prevMs = 0;
+
+    static uint8_t test = 0;
 
     unsigned long now = millis();
     if (now - prevMs >= CYCLES_MS) {
         prevMs = now;
 
-        showDigit(digit);
+        Serial.printf(
+            "1: %d, 2: %d, 3: %d, 4: %d, 5: %d, 6: %d\n", 
+            digits[0], digits[1], digits[2], digits[3], digits[4], digits[5]);
+        showDigits(digits);
 
         // 0 → 1 → … → 9 → 0 → …
-        ++digit;
-        if (digit > 9) digit = 0;
+        for (auto &d: digits) {
+            ++d;
+            if (d > 9) d = 0;
+        }
     }
 }
